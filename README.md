@@ -18,3 +18,5 @@ Requirements:
 At this moment the library expects an apiKey request param (doesn't validate it, just checks it its there).
 
 It's used to store key pairs to control request number. In the future this will be binded to an User domain class.
+
+#### Pull requests are welcome.
