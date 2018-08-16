@@ -15,7 +15,9 @@ Future features:
 
 Requirements:
 
-At this moment the library expects an apiKey request param (doesn't validate it, just checks it its there).
+~~At this moment the library expects an apiKey request param (doesn't validate it, just checks it its there).~~
+
+Now the library uses Spring Security to get the user identifier. If it is not present, will use the remote address.
 
 It's used to store key pairs to control request number. In the future this will be binded to an User domain class.
 

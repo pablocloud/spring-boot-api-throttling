@@ -10,6 +10,8 @@ import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -44,30 +46,29 @@ public class ThrottleAspect {
     }
 
     @Before(value = "checkApiPointCut()")
-    private void checkApiRates(JoinPoint joinPoint) throws Exception {
+    private void checkApiRates(JoinPoint joinPoint) {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Method method = signature.getMethod();
         Throttle throttle = method.getAnnotation(Throttle.class);
-        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
-        String apiKey;
-        apiKey = request.getHeader("apiKey");
-        if (apiKey == null) {
-            apiKey = request.getParameter("apiKey");
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String serializationKey = null;
+        if (authentication.isAuthenticated()) {
+            serializationKey = authentication.getName();
         }
-        if (apiKey == null) {
-            throw new Exception("Not authenticated. Missing apiKey header or param.");
+        if (serializationKey == null) {
+            HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
+            serializationKey = request.getRemoteAddr();
         }
-        //TODO: here there should be auth methods.
         int maxPerSecond = throttle.maxPerSecond();
         int maxPerMinute = throttle.maxPerMinute();
         int maxPerHour = throttle.maxPerHour();
         int maxPerDay = throttle.maxPerDay();
-        this.checkCalls(maxPerSecond, apiKey, SECOND_PERIOD);
-        this.checkCalls(maxPerMinute, apiKey, MINUTE_PERIOD);
-        this.checkCalls(maxPerHour, apiKey, HOUR_PERIOD);
-        this.checkCalls(maxPerDay, apiKey, DAY_PERIOD);
-        apiCallRepository.save(new ApiCall(apiKey, new Date().getTime()));
-        System.out.println("Total calls : " + apiCallRepository.findAllByApiKey(apiKey).size());
+        this.checkCalls(maxPerSecond, serializationKey, SECOND_PERIOD);
+        this.checkCalls(maxPerMinute, serializationKey, MINUTE_PERIOD);
+        this.checkCalls(maxPerHour, serializationKey, HOUR_PERIOD);
+        this.checkCalls(maxPerDay, serializationKey, DAY_PERIOD);
+        apiCallRepository.save(new ApiCall(serializationKey, new Date().getTime()));
+        System.out.println("Total calls : " + apiCallRepository.findAllByApiKey(serializationKey).size());
     }
 
     private void checkCalls(int max, String apiKey, int since) {
