@@ -22,3 +22,6 @@ Now the library uses Spring Security to get the user identifier. If it is not pr
 It's used to store key pairs to control request number. In the future this will be binded to an User domain class.
 
 #### Pull requests are welcome.
+
+## Contributors
+Thanks to @eduardoespinosa to pointing out using Spring Security auth.
