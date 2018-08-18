@@ -11,30 +11,30 @@ public class ApiCall implements Serializable {
     @Id
     @GeneratedValue
     private Long id;
-    private String apiKey;
+    private String key;
     private Long timeStamp;
 
     public ApiCall() {
 
     }
 
-    public ApiCall(String apiKey, Long timeStamp) {
-        this.apiKey = apiKey;
+    public ApiCall(String key, Long timeStamp) {
+        this.key = key;
         this.timeStamp = timeStamp;
     }
 
-    public ApiCall(Long id, String apiKey, Long timeStamp) {
+    public ApiCall(Long id, String key, Long timeStamp) {
         this.id = id;
-        this.apiKey = apiKey;
+        this.key = key;
         this.timeStamp = timeStamp;
     }
 
-    public String getApiKey() {
-        return apiKey;
+    public String getKey() {
+        return key;
     }
 
-    public void setApiKey(String apiKey) {
-        this.apiKey = apiKey;
+    public void setKey(String key) {
+        this.key = key;
     }
 
     public Long getTimeStamp() {

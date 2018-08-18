@@ -1,7 +1,6 @@
 package es.pabloverdugo.springbootapithrottling.aspects;
 
 import es.pabloverdugo.springbootapithrottling.domain.ApiCall;
-import es.pabloverdugo.springbootapithrottling.exceptions.MaxRequestException;
 import es.pabloverdugo.springbootapithrottling.interfaces.Throttle;
 import es.pabloverdugo.springbootapithrottling.repositories.ApiCallRepository;
 import org.aspectj.lang.JoinPoint;
@@ -10,9 +9,12 @@ import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -33,13 +35,24 @@ public class ThrottleAspect {
     private final static int HOUR_PERIOD = -3600;
     private final static int DAY_PERIOD = -86400;
 
+    @Value("${throttle.maxPerSecond}")
+    private int perSecondProperties;
+
+    @Value("${throttle.maxPerMinute}")
+    private int perMinuteProperties;
+
+    @Value("${throttle.maxPerHour}")
+    private int perHourProperties;
+
+    @Value("${throttle.maxPerDay}")
+    private int perDayProperties;
+
     @Autowired
     public ThrottleAspect(ApiCallRepository apiCallRepository) {
         this.apiCallRepository = apiCallRepository;
     }
 
-    @Pointcut(value = "" +
-            "execution(* *.*(..)) && " +
+    @Pointcut(value = "execution(* *.*(..)) && " +
             "@annotation(es.pabloverdugo.springbootapithrottling.interfaces.Throttle)")
     private void checkApiPointCut() {
 
@@ -68,16 +81,15 @@ public class ThrottleAspect {
         this.checkCalls(maxPerHour, serializationKey, HOUR_PERIOD);
         this.checkCalls(maxPerDay, serializationKey, DAY_PERIOD);
         apiCallRepository.save(new ApiCall(serializationKey, new Date().getTime()));
-        System.out.println("Total calls : " + apiCallRepository.findAllByApiKey(serializationKey).size());
     }
 
     private void checkCalls(int max, String apiKey, int since) {
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.SECOND, since);
         List<ApiCall> calls = apiCallRepository
-                .findAllByTimeStampGreaterThanAndTimeStampLessThanAndApiKey(calendar.getTime().getTime(), new Date().getTime(), apiKey);
+                .findAllByTimeStampGreaterThanAndTimeStampLessThanAndKey(calendar.getTime().getTime(), new Date().getTime(), apiKey);
         if (calls.size() + 1 > max) {
-            throw new MaxRequestException(max, calls.size(), since);
+            throw new HttpServerErrorException(HttpStatus.TOO_MANY_REQUESTS);
         }
     }
 
